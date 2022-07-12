@@ -1,26 +1,40 @@
+use na::{vector, Vector3};
 use num_complex::Complex64;
+use rand_distr::{Distribution, Exp, Normal};
 use std::collections::HashMap;
 
 use crate::core_ejection_length::*;
 use crate::ejectionenvironement::EjectionEnvironment;
 use crate::traps::*;
+use rand_pcg::*;
 use std::cmp::Eq;
 use std::io;
 
-fn _float_from_cmd(msg: &str) -> f64 {
+/* fn _float_from_cmd(msg: &str) -> f64 {
     println!("{}", msg);
     let mut input = String::new();
 
     io::stdin().read_line(&mut input).expect("entry not valid");
     input.trim().parse::<f64>().expect("entry not valid")
-}
+} */
 
-pub fn trap_intersect(point: Complex64, traps: &Vec<Trap>) -> bool {
+pub fn trap_intersect(point: na::Vector3<f64>, traps: &Vec<Trap>) -> bool {
     traps.iter().any(|t| (t.center - point).norm() < t.radius)
 }
 
-pub fn single_trap_intersect(point: Complex64, t: Trap) -> bool {
+pub fn single_trap_intersect(point: na::Vector3<f64>, t: Trap) -> bool {
     (t.center - point).norm() < t.radius
+}
+
+//creates a random vector on the unit sphere
+pub fn new_sphere_vector(rng: &mut Lcg128Xsl64) -> Vector3<f64> {
+    let mut var = 1. / 3.;
+    let normal = Normal::new(0., var).unwrap();
+    let mut vector_on_sphere = vector![0., 0., 0.];
+    for i in 0..vector_on_sphere.len() {
+        vector_on_sphere[i] = normal.sample(rng);
+    }
+    vector_on_sphere.normalize()
 }
 
 // keeps track of if pointlike target was crossed
@@ -36,7 +50,7 @@ pub enum Status {
     Dead(usize),
 }
 
-// helps to record visited space
+/* // helps to record visited space
 #[derive(Hash, PartialEq, Eq)]
 pub struct CartesianGridLocation {
     pub x: i32,
@@ -119,4 +133,4 @@ impl CartesianGridLocation {
         }
         territory_map
     }
-}
+} */

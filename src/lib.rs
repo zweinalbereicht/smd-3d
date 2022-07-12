@@ -1,64 +1,25 @@
 #![feature(default_free_fn)]
 #![feature(hash_drain_filter)]
 mod core_ejection_length;
-mod core_robin;
 mod ejectionenvironement;
 mod observables;
 mod tools;
 mod traps;
-use std::default::default;
-use std::env;
 use crate::core_ejection_length::EjectionParticle;
-use crate::core_robin::*;
 use crate::ejectionenvironement::*;
 use crate::observables::*;
 use crate::traps::*;
-use rand::SeedableRng;
+use na::Vector3;
 use pyo3::prelude::*;
+use rand::SeedableRng;
+use std::default::default;
+use std::env;
+extern crate nalgebra as na;
 
-// our user function for the fpt
-#[pyfunction]
-fn fpt_distribution_robin_python(
-    inner_radius: f64,
-    outer_radius: f64,
-    center_offset: f64,
-    bulk_coefficient: f64,
-    boundary_coefficient: f64,
-    absorption_probability: f64, // this is the kappa in the flux at the boundary
-    desorption_time: f64,
-    initial_position: f64,
-    initial_angle: f64,
-    nb_simulations: u32,
-    timestep: f64,
-) -> PyResult<Vec<f64>> {
-    let environement = Environment {
-        inner_radius,
-        outer_radius,
-        center_offset,
-        bulk_coefficient,
-        boundary_coefficient,
-        absorption_probability,
-        desorption_time,
-    };
-
-    let mut rng = rand_pcg::Pcg64::from_entropy();
-
-    let fpts = fpt_distribution_robin(
-        initial_position,
-        initial_angle,
-        nb_simulations,
-        &environement,
-        &mut rng,
-        timestep,
-    );
-
-    Ok(fpts)
-}
-
-#[pyfunction(text_signature = "
+/* #[pyfunction(text_signature = "
 computes a distribution of fpt in the SMD ejection setup, with multiple traps.
 
-parameters : 
+parameters :
 
 outer_radius,
 bulk_coefficient,
@@ -71,7 +32,7 @@ initial_angle,
 nb_simulations,
 timestep,
 ")]
-fn fpt_distribution_ejection_python(
+fn fpt_distribution_python(
     outer_radius: f64,
     bulk_coefficient: f64,
     boundary_coefficient: f64,
@@ -104,7 +65,7 @@ fn fpt_distribution_ejection_python(
 
     let mut rng = rand_pcg::Pcg64::from_entropy();
 
-    let fpts = fpt_distribution_ejection(
+    let fpts = fpt_distribution(
         initial_position,
         initial_angle,
         nb_simulations,
@@ -115,9 +76,10 @@ fn fpt_distribution_ejection_python(
 
     Ok(fpts)
 }
+*/
 
 #[pyfunction(text_signature = "
-computes the mfpt in the SMD ejection setup, using an event driven algorithm.
+computes the mfpt in the 3D SMD ejection setup, using an event driven algorithm.
 
 parameters : 
 
@@ -126,21 +88,19 @@ bulk_coefficient,
 boundary_coefficient,
 ejection_length,
 desorption_time,
-traps, [[r1, a1, radius1],[radial2,angle2,radius2],...]
-initial_position,
-initial_angle,
+traps, [[x1,y1,z1,radius1],[x2,y2,z2,radius2],...]
+initial_position, [x,y,z]
 nb_simulations,
 tolerance,
 ")]
-fn mean_fpt_ejection_python(
+fn mean_fpt_python(
     outer_radius: f64,
     bulk_coefficient: f64,
     boundary_coefficient: f64,
     ejection_length: f64,
     desorption_time: f64,
     traps: Vec<Vec<f64>>,
-    initial_position: f64,
-    initial_angle: f64,
+    initial_position: Vec<f64>,
     nb_simulations: u32,
     tolerance: f64,
 ) -> PyResult<f64> {
@@ -166,10 +126,13 @@ fn mean_fpt_ejection_python(
     let mut rng = rand_pcg::Pcg64::from_entropy();
 
     let mfpt = mean_first_passage_time_to_inner_sphere(
-        initial_position,
-        initial_angle,
+        Vector3::<f64>::new(
+            initial_position[0],
+            initial_position[1],
+            initial_position[2],
+        ),
         nb_simulations,
-        &environement,
+        &mut environement,
         &mut rng,
         tolerance,
     );
@@ -186,9 +149,8 @@ outer_radius,
 ejection_length,
 desorption_time,
 boundary_coefficient
-traps, [[r1, a1, radius1],[radial2,angle2,radius2],...]
-initial_position,
-initial_angle,
+traps, [[x1,y1,z1,radius1],[x2,y2,z2,radius2],...]
+initial_position, [x,y,z]
 nb_simulations,
 tolerance,
 ")]
@@ -198,8 +160,7 @@ fn splitting_boundary_targets_python(
     desorption_time: f64,
     boundary_coefficient: f64,
     traps: Vec<Vec<f64>>,
-    initial_position: f64,
-    initial_angle: f64,
+    initial_position: Vec<f64>,
     nb_simulations: u32,
     tolerance: f64,
 ) -> PyResult<f64> {
@@ -222,10 +183,13 @@ fn splitting_boundary_targets_python(
     }
     let mut rng = rand_pcg::Pcg64::from_entropy();
     let splitting_probabilities = splitting_boundary_targets(
-        initial_position,
-        initial_angle,
+        Vector3::<f64>::new(
+            initial_position[0],
+            initial_position[1],
+            initial_position[2],
+        ),
         nb_simulations,
-        &environement,
+        &mut environement,
         &mut rng,
         tolerance,
     );
@@ -241,9 +205,8 @@ outer_radius,
 ejection_length,
 desorption_time,
 boundary_coefficient
-traps, [[r1, a1, radius1],[radial2,angle2,radius2],...]
-initial_position,
-initial_angle,
+traps, [[x1,y1,z1,radius1],[x2,y2,z2,radius2],...]
+initial_position, [x,y,z]
 target, 
 nb_simulations,
 tolerance,
@@ -254,8 +217,7 @@ fn splitting_targets_python(
     desorption_time: f64,
     boundary_coefficient: f64,
     traps: Vec<Vec<f64>>,
-    initial_position: f64,
-    initial_angle: f64,
+    initial_position: Vec<f64>,
     target: u32, // the target we are aiming for
     nb_simulations: u32,
     tolerance: f64,
@@ -279,18 +241,21 @@ fn splitting_targets_python(
 
     let mut rng = rand_pcg::Pcg64::from_entropy();
     let splitting_probabilities = splitting_targets(
-        initial_position,
-        initial_angle,
+        Vector3::<f64>::new(
+            initial_position[0],
+            initial_position[1],
+            initial_position[2],
+        ),
         target,
         nb_simulations,
-        &environement,
+        &mut environement,
         &mut rng,
         tolerance,
     );
     Ok(splitting_probabilities)
 }
 
-#[pyfunction(text_signature = "
+/* #[pyfunction(text_signature = "
 computes the probability to hit a specific bulk target before any of the others, or a pointlike
 target located at theta=0 by default.
 
@@ -448,18 +413,17 @@ fn escape_angle_distribution_python(
     );
 
     Ok(fpts)
-}
+} */
 
 /// General callable functions from python module.
 #[pymodule]
-fn smd_event_driven(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(escape_angle_distribution_python, m)?)?;
-    //m.add_function(wrap_pyfunction!(fpt_distribution_robin_python, m)?)?;
-    m.add_function(wrap_pyfunction!(fpt_distribution_ejection_python, m)?)?;
-    m.add_function(wrap_pyfunction!(splitting_boundary_targets_python, m)?)?;
-    m.add_function(wrap_pyfunction!(splitting_targets_python, m)?)?;
-    m.add_function(wrap_pyfunction!(splitting_pointlike_bulk_python, m)?)?;
-    m.add_function(wrap_pyfunction!(covered_territory_distribution_python, m)?)?;
-    m.add_function(wrap_pyfunction!(mean_fpt_ejection_python, m)?)?;
+fn smd_3d(_py: Python, m: &PyModule) -> PyResult<()> {
+    // m.add_function(wrap_pyfunction!(escape_angle_distribution_python, m)?)?;
+    // m.add_function(wrap_pyfunction!(fpt_distribution_ejection_python, m)?)?;
+     m.add_function(wrap_pyfunction!(splitting_boundary_targets_python, m)?)?;
+     m.add_function(wrap_pyfunction!(splitting_targets_python, m)?)?;
+    // m.add_function(wrap_pyfunction!(splitting_pointlike_bulk_python, m)?)?;
+    // m.add_function(wrap_pyfunction!(covered_territory_distribution_python, m)?)?;
+     m.add_function(wrap_pyfunction!(mean_fpt_python, m)?)?;
     Ok(())
 }

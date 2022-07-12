@@ -2,69 +2,25 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use crate::core_ejection_length::*;
-use crate::core_robin::*;
 use crate::ejectionenvironement::*;
 use crate::tools::*;
 use itertools::Itertools;
+use na::Vector3;
 use num_complex::Complex64;
 use rand_pcg::Lcg128Xsl64;
 
 // computes one first passge time to inner sphere
-fn first_passage_time_to_inner_sphere_robin(
-    initial_radial_pos: f64,
-    initial_angular_pos: f64,
-    environement: &Environment,
-    rng: &mut Lcg128Xsl64,
-    dt: f64,
-) -> f64 {
-    let mut particle = Particle::default();
-    particle.reset(initial_radial_pos, initial_angular_pos);
-    // check if we are already on the boundary
-    particle.status = match initial_radial_pos >= environement.outer_radius {
-        true => Status::Absorbed,
-        false => Status::Bulk(PointlikeTarket::NotCrossed),
-    };
-    while !(matches!(particle.status, Status::Dead(_))) {
-        particle.move_particle(&environement, rng, dt);
-    }
-    //println!("{}", particle);
-    particle.lifetime
-}
-// creates a distribution of fpt
-pub fn fpt_distribution_robin(
-    initial_radial_pos: f64,
-    initial_angular_pos: f64,
-    number_of_simulations: u32,
-    environement: &Environment,
-    mut rng: &mut Lcg128Xsl64,
-    dt: f64,
-) -> Vec<f64> {
-    vec![0.; number_of_simulations as usize]
-        .iter()
-        .map(|_| {
-            first_passage_time_to_inner_sphere_robin(
-                initial_radial_pos,
-                initial_angular_pos,
-                &environement,
-                &mut rng,
-                dt,
-            )
-        })
-        .collect_vec()
-}
-
-// computes one first passge time to inner sphere
-fn first_passage_time_to_inner_sphere_ejection(
-    initial_radial_pos: f64,
-    initial_angular_pos: f64,
+// TODO(once we impement the step by step simulation, needed for distributions)
+/* fn first_passage_time_to_inner_sphere(
+    initial_position : Vector3<f64>,
     environement: &EjectionEnvironment,
     rng: &mut Lcg128Xsl64,
     dt: f64,
 ) -> f64 {
     let mut particle = EjectionParticle::default();
-    particle.reset(initial_radial_pos, initial_angular_pos);
+    particle.reset(initial_position);
     // check if we are already on the boundary
-    particle.status = match initial_radial_pos >= environement.outer_radius {
+    particle.status = match particle.position.norm() >= environement.outer_radius {
         true => Status::Absorbed,
         false => Status::Bulk(PointlikeTarket::NotCrossed),
     };
@@ -74,11 +30,10 @@ fn first_passage_time_to_inner_sphere_ejection(
     //println!("{}", particle);
     particle.lifetime
 }
-
+*/
 // mean first passage time to inner sphere
 pub fn mean_first_passage_time_to_inner_sphere(
-    initial_position: f64,
-    initial_angle: f64,
+    initial_position: Vector3<f64>,
     nb_simulations: u32,
     environement: &EjectionEnvironment,
     rng: &mut Lcg128Xsl64,
@@ -87,8 +42,8 @@ pub fn mean_first_passage_time_to_inner_sphere(
     let mut mfpt = 0.;
     let mut particle = EjectionParticle::default();
     for _ in 0..nb_simulations {
-        particle.reset(initial_position, initial_angle);
-        particle.status = match particle.radial_position < environement.outer_radius {
+        particle.reset(initial_position);
+        particle.status = match particle.position.norm() < environement.outer_radius {
             true => Status::Bulk(PointlikeTarket::NotCrossed),
             false => Status::Absorbed,
         };
@@ -103,7 +58,8 @@ pub fn mean_first_passage_time_to_inner_sphere(
 }
 
 // computes the are of covered territory before hitting one of the traps.
-fn covered_territory(
+// TODO (later)
+/* fn covered_territory(
     initial_radial_pos: f64,
     initial_angular_pos: f64,
     environement: &EjectionEnvironment,
@@ -172,7 +128,7 @@ fn escape_angle_from_outer_sphere(
 }
 
 // creates a distribution of fpt
-pub fn fpt_distribution_ejection(
+pub fn fpt_distribution(
     initial_radial_pos: f64,
     initial_angular_pos: f64,
     number_of_simulations: u32,
@@ -183,7 +139,7 @@ pub fn fpt_distribution_ejection(
     vec![0.; number_of_simulations as usize]
         .iter()
         .map(|_| {
-            first_passage_time_to_inner_sphere_ejection(
+            first_passage_time_to_inner_sphere(
                 initial_radial_pos,
                 initial_angular_pos,
                 &environement,
@@ -241,10 +197,11 @@ pub fn covered_territory_distribution(
         })
         .collect_vec()
 }
+*/
+
 // splitting probability to outer rim instead of targets
 pub fn splitting_boundary_targets(
-    initial_position: f64,
-    initial_angle: f64,
+    initial_position: Vector3<f64>,
     nb_simulations: u32,
     environement: &EjectionEnvironment,
     rng: &mut Lcg128Xsl64,
@@ -253,10 +210,10 @@ pub fn splitting_boundary_targets(
     let mut splitting = 0.;
     for _ in 0..nb_simulations {
         let mut particle = EjectionParticle::default();
-        particle.reset(initial_position, initial_angle);
+        particle.reset(initial_position);
         particle.status = Status::Bulk(PointlikeTarket::NotCrossed);
 
-        // until we either toush a target or the boundary
+        // until we either touch a target or the boundary
         while !(matches!(particle.status, Status::Dead(_) | Status::Absorbed)) {
             particle.move_particle_event(&environement, rng, tolerance);
         }
@@ -269,8 +226,7 @@ pub fn splitting_boundary_targets(
 
 // splitting probability to one of the inner targets.
 pub fn splitting_targets(
-    initial_position: f64,
-    initial_angle: f64,
+    initial_position: Vector3<f64>,
     target: u32,
     nb_simulations: u32,
     environement: &EjectionEnvironment,
@@ -280,8 +236,8 @@ pub fn splitting_targets(
     let mut splitting = 0.;
     let mut particle = EjectionParticle::default();
     for _ in 0..nb_simulations {
-        particle.reset(initial_position, initial_angle);
-        particle.status = match particle.radial_position < environement.outer_radius {
+        particle.reset(initial_position);
+        particle.status = match particle.position.norm() < environement.outer_radius {
             true => Status::Bulk(PointlikeTarket::NotCrossed),
             false => Status::Absorbed,
         };
@@ -293,44 +249,6 @@ pub fn splitting_targets(
         let touchedtarget = match particle.status {
             Status::Dead(p) => p as u32,
             _ => (environement.traps.len() + 1) as u32, // just to make sure it doesn't happen
-        };
-
-        if target == touchedtarget {
-            splitting += 1.;
-        }
-    }
-    splitting / (nb_simulations as f64)
-}
-
-pub fn splitting_pointlike_bulk(
-    initial_position: f64,
-    initial_angle: f64,
-    target: i32,
-    nb_simulations: u32,
-    environement: &EjectionEnvironment,
-    rng: &mut Lcg128Xsl64,
-    tolerance: f64,
-) -> f64 {
-    let mut splitting = 0.;
-    let mut particle = EjectionParticle::default();
-    for _ in 0..nb_simulations {
-        particle.reset(initial_position, initial_angle);
-        particle.status = match particle.radial_position < environement.outer_radius {
-            true => Status::Bulk(PointlikeTarket::NotCrossed),
-            false => Status::Absorbed,
-        };
-
-        // until we either touch a target or the pointlike target on the boundary.
-        while !(matches!(
-            particle.status,
-            Status::Dead(_) | Status::Bulk(PointlikeTarket::Crossed)
-        )) {
-            particle.move_particle_event(&environement, rng, tolerance);
-        }
-        let touchedtarget = match particle.status {
-            Status::Dead(p) => p as i32,
-            Status::Bulk(PointlikeTarket::Crossed) => -1, // this is we've been absorbed on the pointlike target
-            _ => (environement.traps.len() + 1) as i32,   // just to make sure it doesn't happen
         };
 
         if target == touchedtarget {
