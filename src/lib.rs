@@ -207,7 +207,7 @@ desorption_time,
 boundary_coefficient
 traps, [[x1,y1,z1,radius1],[x2,y2,z2,radius2],...]
 initial_position, [x,y,z]
-target, 
+target, --> starts at 0
 nb_simulations,
 tolerance,
 ")]
