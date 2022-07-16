@@ -93,7 +93,7 @@ initial_position, [x,y,z]
 nb_simulations,
 tolerance,
 ")]
-fn mean_fpt_python(
+fn mfpt_python(
     outer_radius: f64,
     bulk_coefficient: f64,
     boundary_coefficient: f64,
@@ -112,6 +112,8 @@ fn mean_fpt_python(
         desorption_time,
         ..default()
     };
+
+    println!("environement {:?}", environement);
 
     if traps.len() > 0 {
         // take away the default trap
@@ -259,7 +261,7 @@ fn splitting_targets_python(
 computes the probability to hit a specific bulk target before any of the others, or a pointlike
 target located at theta=0 by default.
 
-parameters : 
+parameters :
 
 outer_radius,
 ejection_length,
@@ -317,7 +319,7 @@ fn splitting_pointlike_bulk_python(
 #[pyfunction(text_signature = "
 computes a distribution of covered territories
 
-parameters : 
+parameters :
 
 outer_radius,
 ejection_length,
@@ -415,15 +417,69 @@ fn escape_angle_distribution_python(
     Ok(fpts)
 } */
 
+#[pyfunction(text_signature = "
+Returns an array of statuses after some elapsed time.
+
+parameters : 
+
+outer_radius,
+bulk_coefficient,
+boundary_coefficient,
+ejection_length,
+desorption_time,
+initial_position, [x,y,z]
+evolve_time,
+nb_simulations,
+tolerance,
+")]
+pub fn stationnary_state_python(
+    outer_radius: f64,
+    bulk_coefficient: f64,
+    boundary_coefficient: f64,
+    ejection_length: f64,
+    desorption_time: f64,
+    initial_position: Vec<f64>,
+    evolve_time: f64,
+    nb_simulations: u32,
+    tolerance: f64,
+) -> PyResult<Vec<String>> {
+    let environement = EjectionEnvironment {
+        outer_radius,
+        bulk_coefficient,
+        boundary_coefficient,
+        ejection_length,
+        desorption_time,
+        ..default()
+    };
+
+    let mut rng = rand_pcg::Pcg64::from_entropy();
+    let initial_position_vector = Vector3::<f64>::new(
+        initial_position[0],
+        initial_position[1],
+        initial_position[2],
+    );
+
+    let stationnary_states = stationnary_state(
+        initial_position_vector,
+        evolve_time,
+        &environement,
+        &mut rng,
+        nb_simulations,
+        tolerance,
+    );
+
+    Ok(stationnary_states)
+}
 /// General callable functions from python module.
 #[pymodule]
 fn smd_3d(_py: Python, m: &PyModule) -> PyResult<()> {
     // m.add_function(wrap_pyfunction!(escape_angle_distribution_python, m)?)?;
     // m.add_function(wrap_pyfunction!(fpt_distribution_ejection_python, m)?)?;
-     m.add_function(wrap_pyfunction!(splitting_boundary_targets_python, m)?)?;
-     m.add_function(wrap_pyfunction!(splitting_targets_python, m)?)?;
+    m.add_function(wrap_pyfunction!(splitting_boundary_targets_python, m)?)?;
+    m.add_function(wrap_pyfunction!(splitting_targets_python, m)?)?;
     // m.add_function(wrap_pyfunction!(splitting_pointlike_bulk_python, m)?)?;
     // m.add_function(wrap_pyfunction!(covered_territory_distribution_python, m)?)?;
-     m.add_function(wrap_pyfunction!(mean_fpt_python, m)?)?;
+    m.add_function(wrap_pyfunction!(mfpt_python, m)?)?;
+    m.add_function(wrap_pyfunction!(stationnary_state_python, m)?)?;
     Ok(())
 }

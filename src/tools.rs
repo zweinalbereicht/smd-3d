@@ -28,8 +28,8 @@ pub fn single_trap_intersect(point: na::Vector3<f64>, t: Trap) -> bool {
 
 //creates a random vector on the unit sphere
 pub fn new_sphere_vector(rng: &mut Lcg128Xsl64) -> Vector3<f64> {
-    let mut var = 1. / 3.;
-    let normal = Normal::new(0., var).unwrap();
+    let var: f64 = 1. / 3.;
+    let normal = Normal::new(0., var.sqrt()).unwrap();
     let mut vector_on_sphere = vector![0., 0., 0.];
     for i in 0..vector_on_sphere.len() {
         vector_on_sphere[i] = normal.sample(rng);
@@ -38,12 +38,14 @@ pub fn new_sphere_vector(rng: &mut Lcg128Xsl64) -> Vector3<f64> {
 }
 
 // keeps track of if pointlike target was crossed
+#[derive(Debug,Clone)]
 pub enum PointlikeTarket {
     Crossed,
     NotCrossed,
 }
 
 // keeps track of the status of the particle
+#[derive(Debug,Clone)]
 pub enum Status {
     Bulk(PointlikeTarket),
     Absorbed,

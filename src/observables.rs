@@ -257,3 +257,32 @@ pub fn splitting_targets(
     }
     splitting / (nb_simulations as f64)
 }
+
+// returns the state of the particle after some user inputted time has elapsed
+// Since we are using the event driven algorithm here, this is going to be only approximate.
+pub fn stationnary_state(
+    initial_position: Vector3<f64>,
+    evolve_time: f64,
+    environement: &EjectionEnvironment,
+    rng: &mut Lcg128Xsl64,
+    nb_simulations: u32,
+    tolerance: f64,
+) -> Vec<String> {
+    let mut particle = EjectionParticle::default();
+    let mut old_status = particle.status.clone();
+    let mut states: Vec<String> = vec![];
+    for _ in 0..nb_simulations {
+        particle.reset(initial_position);
+        while particle.lifetime < evolve_time {
+            old_status = particle.status.clone();
+            particle.move_particle_event(environement, rng, tolerance);
+        }
+        states.push(match old_status {
+            Status::Bulk(_) => String::from("bulk"),
+            Status::Absorbed => String::from("boundary"),
+            Status::Dead(_) => String::from("dead"),
+        })
+    }
+    print!("{}", states.len());
+    states
+}

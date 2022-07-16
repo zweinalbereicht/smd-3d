@@ -51,7 +51,7 @@ impl Default for EjectionParticle {
 }
 
 impl EjectionParticle {
-    pub fn reset(&mut self, position : Vector3<f64>) {
+    pub fn reset(&mut self, position: Vector3<f64>) {
         self.position = position.clone();
         self.lifetime = 0.;
         self.status = Status::Bulk(PointlikeTarket::NotCrossed);
@@ -173,13 +173,11 @@ impl EjectionParticle {
                     * normal.sample(rng)
                     / environement.outer_radius;
 
-
                 //move --> it doesnt matter which rotation we take at this point since we are going
                 //to be isotropic.
-                let axisangle =move_along_boundary*new_sphere_vector(rng);
+                let axisangle = move_along_boundary * new_sphere_vector(rng);
                 let rotation = Rotation3::new(axisangle);
                 self.position = rotation * self.position;
-
 
                 //eject
                 self.position -= self.position.normalize() * environement.ejection_length;
