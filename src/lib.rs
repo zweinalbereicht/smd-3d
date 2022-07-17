@@ -113,7 +113,6 @@ fn mfpt_python(
         ..default()
     };
 
-    println!("environement {:?}", environement);
 
     // fill with the traps
     traps
