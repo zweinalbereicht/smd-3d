@@ -115,15 +115,11 @@ fn mfpt_python(
 
     println!("environement {:?}", environement);
 
-    if traps.len() > 0 {
-        // take away the default trap
-        environement.traps.pop();
-        // add all the new traps
-        traps
-            .iter()
-            .map(|x| parse_trap(x))
-            .for_each(|p| environement.add_trap(p.unwrap()));
-    }
+    // fill with the traps
+    traps
+        .iter()
+        .map(|x| parse_trap(x))
+        .for_each(|p| environement.add_trap(p.unwrap()));
 
     let mut rng = rand_pcg::Pcg64::from_entropy();
 
@@ -174,15 +170,13 @@ fn splitting_boundary_targets_python(
         desorption_time,
         ..default()
     };
-    if traps.len() > 0 {
-        // take away the default trap
-        environement.traps.pop();
-        // add all the new traps
-        traps
-            .iter()
-            .map(|x| parse_trap(x))
-            .for_each(|p| environement.add_trap(p.unwrap()));
-    }
+
+    // fill with the traps
+    traps
+        .iter()
+        .map(|x| parse_trap(x))
+        .for_each(|p| environement.add_trap(p.unwrap()));
+
     let mut rng = rand_pcg::Pcg64::from_entropy();
     let splitting_probabilities = splitting_boundary_targets(
         Vector3::<f64>::new(
@@ -230,16 +224,11 @@ fn splitting_targets_python(
     environement.desorption_time = desorption_time;
     environement.boundary_coefficient = boundary_coefficient;
 
-    // add the traps to the environement
-    if traps.len() > 0 {
-        // take away the default trap
-        environement.traps.pop();
-        // add all the new traps
-        traps
-            .iter()
-            .map(|x| parse_trap(x))
-            .for_each(|p| environement.add_trap(p.unwrap()));
-    }
+    // fill with the traps
+    traps
+        .iter()
+        .map(|x| parse_trap(x))
+        .for_each(|p| environement.add_trap(p.unwrap()));
 
     let mut rng = rand_pcg::Pcg64::from_entropy();
     let splitting_probabilities = splitting_targets(

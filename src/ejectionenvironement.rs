@@ -25,8 +25,8 @@ impl Default for EjectionEnvironment {
             boundary_coefficient: 1.0,
             ejection_length: 1.,
             desorption_time: 1.,
-            // prepare empty vector for traps and fill it with one centered trap.
-            traps:vec![Trap::default()],
+            // prepare empty vector for traps
+            traps:vec![],
         }
     }
 }

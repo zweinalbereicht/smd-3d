@@ -196,7 +196,7 @@ impl EjectionParticle {
                         .iter()
                         .map(|t| (self.position - t.center).norm() - t.radius)
                         .reduce(f64::min)
-                        .unwrap(),
+                        .unwrap_or(environement.outer_radius + 1.), // Ensure nothing goes wrong if we have no traps
                 ) + tolerance;
 
                 //calculate the jump by drawing on a sphere and then multiplying by the min radius
