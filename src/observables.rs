@@ -11,7 +11,7 @@ use rand_pcg::Lcg128Xsl64;
 
 // computes one first passge time to inner sphere
 // TODO(once we impement the step by step simulation, needed for distributions)
-/* fn first_passage_time_to_inner_sphere(
+fn first_passage_time_to_inner_sphere(
     initial_position : Vector3<f64>,
     environement: &EjectionEnvironment,
     rng: &mut Lcg128Xsl64,
@@ -30,7 +30,32 @@ use rand_pcg::Lcg128Xsl64;
     //println!("{}", particle);
     particle.lifetime
 }
-*/
+
+
+// creates a distribution of fpt
+// Note that this cannot be done by using the event driven algorithm, so it' necessarily
+// longer...we could implement an event driven version at some point I guess. --> need to think
+// about it.
+pub fn fpt_distribution(
+    initial_position: Vector3<f64>,
+    number_of_simulations: u32,
+    environement: &EjectionEnvironment,
+    mut rng: &mut Lcg128Xsl64,
+    dt: f64,
+) -> Vec<f64> {
+    vec![0.; number_of_simulations as usize]
+        .iter()
+        .map(|_| {
+            first_passage_time_to_inner_sphere(
+                initial_position,
+                &environement,
+                &mut rng,
+                dt,
+            )
+        })
+        .collect_vec()
+}
+
 // mean first passage time to inner sphere
 pub fn mean_first_passage_time_to_inner_sphere(
     initial_position: Vector3<f64>,
@@ -48,7 +73,7 @@ pub fn mean_first_passage_time_to_inner_sphere(
             false => Status::Absorbed,
         };
 
-        // until we touch a target
+        // until we touch a target, we use the event algorithm.
         while !(matches!(particle.status, Status::Dead(_))) {
             particle.move_particle_event(&environement, rng, tolerance);
         }
@@ -127,28 +152,6 @@ fn escape_angle_from_outer_sphere(
     }
 }
 
-// creates a distribution of fpt
-pub fn fpt_distribution(
-    initial_radial_pos: f64,
-    initial_angular_pos: f64,
-    number_of_simulations: u32,
-    environement: &EjectionEnvironment,
-    mut rng: &mut Lcg128Xsl64,
-    dt: f64,
-) -> Vec<f64> {
-    vec![0.; number_of_simulations as usize]
-        .iter()
-        .map(|_| {
-            first_passage_time_to_inner_sphere(
-                initial_radial_pos,
-                initial_angular_pos,
-                &environement,
-                &mut rng,
-                dt,
-            )
-        })
-        .collect_vec()
-}
 
 pub fn escape_angle_distribution(
     initial_radial_pos: f64,

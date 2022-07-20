@@ -16,8 +16,8 @@ use std::default::default;
 use std::env;
 extern crate nalgebra as na;
 
-/* #[pyfunction(text_signature = "
-computes a distribution of fpt in the SMD ejection setup, with multiple traps.
+#[pyfunction(text_signature = "
+computes a distribution of fpt in the SMD ejection setup, with possible multiple traps.
 
 parameters :
 
@@ -26,9 +26,8 @@ bulk_coefficient,
 boundary_coefficient,
 ejection_length,
 desorption_time,
-traps, [[r1, a1, radius1],[radial2,angle2,radius2],...]
-initial_position,
-initial_angle,
+traps, [[x1,y1,z1, radius1],[x2,y2,z2,radius2],...]
+initial_position, [x,y,z]
 nb_simulations,
 timestep,
 ")]
@@ -39,8 +38,7 @@ fn fpt_distribution_python(
     ejection_length: f64,
     desorption_time: f64,
     traps: Vec<Vec<f64>>,
-    initial_position: f64,
-    initial_angle: f64,
+    initial_position: Vec<f64>,
     nb_simulations: u32,
     timestep: f64,
 ) -> PyResult<Vec<f64>> {
@@ -56,18 +54,17 @@ fn fpt_distribution_python(
     if traps.len() > 0 {
         // take away the default trap
         environement.traps.pop();
-        // add all the new traps
-        traps
-            .iter()
-            .map(|x| parse_trap(x))
-            .for_each(|p| environement.add_trap(p.unwrap()));
     }
+    // add all the new traps
+    traps
+        .iter()
+        .map(|x| parse_trap(x))
+        .for_each(|p| environement.add_trap(p.unwrap()));
 
     let mut rng = rand_pcg::Pcg64::from_entropy();
 
     let fpts = fpt_distribution(
-        initial_position,
-        initial_angle,
+        Vector3::from_vec(initial_position),
         nb_simulations,
         &environement,
         &mut rng,
@@ -76,7 +73,6 @@ fn fpt_distribution_python(
 
     Ok(fpts)
 }
-*/
 
 #[pyfunction(text_signature = "
 computes the mfpt in the 3D SMD ejection setup, using an event driven algorithm.
@@ -112,7 +108,6 @@ fn mfpt_python(
         desorption_time,
         ..default()
     };
-
 
     // fill with the traps
     traps
@@ -458,6 +453,16 @@ pub fn stationnary_state_python(
 
     Ok(stationnary_states)
 }
+
+#[pyfunction(text_signature = "
+small tests on the rust side
+")]
+pub fn testing_stuff() -> PyResult<Vec<f64>> {
+    let mut v = Vector3::from_vec(vec![1., 1., 1.]);
+    v.scale_mut(2.);
+    Ok(vec![v.x, v.y, v.z])
+}
+
 /// General callable functions from python module.
 #[pymodule]
 fn smd_3d(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -468,6 +473,8 @@ fn smd_3d(_py: Python, m: &PyModule) -> PyResult<()> {
     // m.add_function(wrap_pyfunction!(splitting_pointlike_bulk_python, m)?)?;
     // m.add_function(wrap_pyfunction!(covered_territory_distribution_python, m)?)?;
     m.add_function(wrap_pyfunction!(mfpt_python, m)?)?;
+    m.add_function(wrap_pyfunction!(fpt_distribution_python, m)?)?;
     m.add_function(wrap_pyfunction!(stationnary_state_python, m)?)?;
+    m.add_function(wrap_pyfunction!(testing_stuff, m)?)?;
     Ok(())
 }
