@@ -133,6 +133,72 @@ fn mfpt_python(
 }
 
 #[pyfunction(text_signature = "
+computes the mfpt in the 3D SMD ejection setup, using an event driven algorithm and including stickytraps
+
+parameters : 
+
+outer_radius,
+bulk_coefficient,
+boundary_coefficient,
+ejection_length,
+desorption_time,
+stickytraps, [[x1,y1,z1,radius1,desorption_time, boundary_coefficient],,...]
+traps, [[x1,y1,z1,radius1],[x2,y2,z2,radius2],...]
+initial_position, [x,y,z]
+nb_simulations,
+tolerance,
+")]
+fn mfpt_stickytraps_python(
+    outer_radius: f64,
+    bulk_coefficient: f64,
+    boundary_coefficient: f64,
+    ejection_length: f64,
+    desorption_time: f64,
+    stickytraps: Vec<Vec<f64>>,
+    traps: Vec<Vec<f64>>,
+    initial_position: Vec<f64>,
+    nb_simulations: u32,
+    tolerance: f64,
+) -> PyResult<f64> {
+    let mut environement = EjectionEnvironment {
+        outer_radius,
+        bulk_coefficient,
+        boundary_coefficient,
+        ejection_length,
+        desorption_time,
+        ..default()
+    };
+
+    // fill with the traps and stickytraps
+    traps
+        .iter()
+        .map(|x| parse_trap(x))
+        .for_each(|p| environement.add_trap(p.unwrap()));
+    
+    // fill with the traps and stickytraps
+    stickytraps
+        .iter()
+        .map(|x| parse_sticky_trap(x))
+        .for_each(|p| environement.add_sticky_trap(p.unwrap()));
+
+    let mut rng = rand_pcg::Pcg64::from_entropy();
+
+    let mfpt = mean_first_passage_time_to_inner_sphere(
+        Vector3::<f64>::new(
+            initial_position[0],
+            initial_position[1],
+            initial_position[2],
+        ),
+        nb_simulations,
+        &mut environement,
+        &mut rng,
+        tolerance,
+    );
+
+    Ok(mfpt)
+}
+
+#[pyfunction(text_signature = "
 computes the probability to hit the boundary before any of the inner targets
 
 parameters : 
@@ -481,6 +547,7 @@ fn smd_3d(_py: Python, m: &PyModule) -> PyResult<()> {
     // m.add_function(wrap_pyfunction!(splitting_pointlike_bulk_python, m)?)?;
     // m.add_function(wrap_pyfunction!(covered_territory_distribution_python, m)?)?;
     m.add_function(wrap_pyfunction!(mfpt_python, m)?)?;
+    m.add_function(wrap_pyfunction!(mfpt_stickytraps_python, m)?)?;
     m.add_function(wrap_pyfunction!(fpt_distribution_python, m)?)?;
     m.add_function(wrap_pyfunction!(stationnary_state_python, m)?)?;
     m.add_function(wrap_pyfunction!(testing_stuff, m)?)?;

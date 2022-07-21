@@ -18,7 +18,7 @@ impl Default for Trap {
 
 // this function parses a vector containing 4 numbers [x_pos, y_pos, z_pos, radius]
 pub fn parse_trap(trap: &Vec<f64>) -> Option<Trap> {
-    match trap.len() == 5 {
+    match trap.len() == 4 {
         true => Some(Trap {
             radius: trap[3],
             center: na::vector![trap[0], trap[1], trap[2]],
