@@ -18,13 +18,6 @@ use std::io;
     input.trim().parse::<f64>().expect("entry not valid")
 } */
 
-pub fn trap_intersect(point: na::Vector3<f64>, traps: &Vec<Trap>) -> bool {
-    traps.iter().any(|t| (t.center - point).norm() < t.radius)
-}
-
-pub fn single_trap_intersect(point: na::Vector3<f64>, t: Trap) -> bool {
-    (t.center - point).norm() < t.radius
-}
 
 //creates a random vector on the unit sphere
 pub fn new_sphere_vector(rng: &mut Lcg128Xsl64) -> Vector3<f64> {
@@ -38,17 +31,24 @@ pub fn new_sphere_vector(rng: &mut Lcg128Xsl64) -> Vector3<f64> {
 }
 
 // keeps track of if pointlike target was crossed
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub enum PointlikeTarket {
     Crossed,
     NotCrossed,
 }
 
+// type of diffusive surface
+#[derive(Debug, Clone)]
+pub enum Surface {
+    Boundary,
+    StickyTrap(StickyTrap), // we need to store the sticky trap here.
+}
+
 // keeps track of the status of the particle
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub enum Status {
     Bulk(PointlikeTarket),
-    Absorbed,
+    Absorbed(Surface),
     Dead(usize),
 }
 

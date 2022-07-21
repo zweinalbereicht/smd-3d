@@ -401,7 +401,7 @@ fn escape_angle_distribution_python(
 } */
 
 #[pyfunction(text_signature = "
-Returns an array of statuses after some elapsed time.
+Returns an array of statuses after some elapsed time, stickytraps are included.
 
 parameters : 
 
@@ -410,6 +410,7 @@ bulk_coefficient,
 boundary_coefficient,
 ejection_length,
 desorption_time,
+stickytraps, [[x1,y1,z1,radius1,desorption_time, diffusive coefficient]]
 initial_position, [x,y,z]
 evolve_time,
 nb_simulations,
@@ -421,12 +422,13 @@ pub fn stationnary_state_python(
     boundary_coefficient: f64,
     ejection_length: f64,
     desorption_time: f64,
+    stickytraps : Vec<Vec<f64>>,
     initial_position: Vec<f64>,
     evolve_time: f64,
     nb_simulations: u32,
     tolerance: f64,
 ) -> PyResult<Vec<String>> {
-    let environement = EjectionEnvironment {
+    let mut environement = EjectionEnvironment {
         outer_radius,
         bulk_coefficient,
         boundary_coefficient,
@@ -434,6 +436,12 @@ pub fn stationnary_state_python(
         desorption_time,
         ..default()
     };
+
+    // fill with the stickytraps
+    stickytraps
+        .iter()
+        .map(|x| parse_sticky_trap(x))
+        .for_each(|p| environement.add_sticky_trap(p.unwrap()));
 
     let mut rng = rand_pcg::Pcg64::from_entropy();
     let initial_position_vector = Vector3::<f64>::new(

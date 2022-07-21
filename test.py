@@ -1,48 +1,52 @@
 import numpy as np
 import smd_3d as smd
 
-outer_radius = 1
-ejection_length = 0.1
-desorption_time =1
+outer_radius = 2
+ejection_length = 0.18
+desorption_time =0.1
 boundary_coefficient = 1
 bulk_coefficient = 1
 theta = 2*np.pi/3
 traps = np.array([[0.,0.,0.,0.1]])
-initial_position = [0.5,0,0]
+stickytraps = np.array([[0.,0.,0.,1,desorption_time, boundary_coefficient]])
+initial_position = [1.5,0,0]
 nb_simulations = 500
-tolerance = 0.001
+tolerance = 0.01
 dt=0.00001
-evolve_time=1000
+evolve_time=30
 
-a=smd.fpt_distribution_python(
-    outer_radius,
-    bulk_coefficient,
-    boundary_coefficient,
-    ejection_length,
-    desorption_time,
-    traps,
-    initial_position,
-    nb_simulations,
-    dt)
-
-print(np.mean(a))
-
-#
-# print('starting')
-# a=smd.stationnary_state_python(
+# a=smd.fpt_distribution_python(
 #     outer_radius,
 #     bulk_coefficient,
 #     boundary_coefficient,
 #     ejection_length,
 #     desorption_time,
+#     traps,
 #     initial_position,
-#     evolve_time,
 #     nb_simulations,
-#     tolerance,)
+#     dt)
+#
+# print(np.mean(a))
+
+#
+# print('starting')
+a=smd.stationnary_state_python(
+    outer_radius,
+    bulk_coefficient,
+    boundary_coefficient,
+    ejection_length,
+    desorption_time,
+    stickytraps,
+    initial_position,
+    evolve_time,
+    nb_simulations,
+    tolerance,)
+
+a=np.array(a)
+print(len(a[a=='boundary'])/len(a))
+
 # print('done')
 #
-# a=np.array(a)
-# print(len(a[a=='boundary'])/len(a))
 
 # split = smd.splitting_boundary_targets_python(
 #     outer_radius,

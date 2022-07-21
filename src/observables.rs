@@ -6,10 +6,9 @@ use crate::ejectionenvironement::*;
 use crate::tools::*;
 use itertools::Itertools;
 use na::Vector3;
-use num_complex::Complex64;
 use rand_pcg::Lcg128Xsl64;
 
-// computes one first passge time to inner sphere
+// computes one first passage time to inner sphere
 // TODO(once we impement the step by step simulation, needed for distributions)
 fn first_passage_time_to_inner_sphere(
     initial_position : Vector3<f64>,
@@ -21,7 +20,7 @@ fn first_passage_time_to_inner_sphere(
     particle.reset(initial_position);
     // check if we are already on the boundary
     particle.status = match particle.position.norm() >= environement.outer_radius {
-        true => Status::Absorbed,
+        true => Status::Absorbed(Surface::Boundary),
         false => Status::Bulk(PointlikeTarket::NotCrossed),
     };
     while !(matches!(particle.status, Status::Dead(_))) {
@@ -70,7 +69,7 @@ pub fn mean_first_passage_time_to_inner_sphere(
         particle.reset(initial_position);
         particle.status = match particle.position.norm() < environement.outer_radius {
             true => Status::Bulk(PointlikeTarket::NotCrossed),
-            false => Status::Absorbed,
+            false => Status::Absorbed(Surface::Boundary),
         };
 
         // until we touch a target, we use the event algorithm.
@@ -202,7 +201,8 @@ pub fn covered_territory_distribution(
 }
 */
 
-// splitting probability to outer rim instead of targets
+// splitting probability to outer rim instead of targets. note that evolving on a sticky traps
+// doesn't count as reaching the boundary.
 pub fn splitting_boundary_targets(
     initial_position: Vector3<f64>,
     nb_simulations: u32,
@@ -217,10 +217,10 @@ pub fn splitting_boundary_targets(
         particle.status = Status::Bulk(PointlikeTarket::NotCrossed);
 
         // until we either touch a target or the boundary
-        while !(matches!(particle.status, Status::Dead(_) | Status::Absorbed)) {
+        while !(matches!(particle.status, Status::Dead(_) | Status::Absorbed(Surface::Boundary))) {
             particle.move_particle_event(&environement, rng, tolerance);
         }
-        if matches!(particle.status, Status::Absorbed) {
+        if matches!(particle.status, Status::Absorbed(Surface::Boundary)) {
             splitting += 1.;
         }
     }
@@ -242,7 +242,7 @@ pub fn splitting_targets(
         particle.reset(initial_position);
         particle.status = match particle.position.norm() < environement.outer_radius {
             true => Status::Bulk(PointlikeTarket::NotCrossed),
-            false => Status::Absorbed,
+            false => Status::Absorbed(Surface::Boundary),
         };
 
         // until we either touch a target or the boundary
@@ -282,7 +282,7 @@ pub fn stationnary_state(
         }
         states.push(match old_status {
             Status::Bulk(_) => String::from("bulk"),
-            Status::Absorbed => String::from("boundary"),
+            Status::Absorbed(_) => String::from("boundary"),
             Status::Dead(_) => String::from("dead"),
         })
     }
