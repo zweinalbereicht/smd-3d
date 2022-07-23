@@ -61,10 +61,6 @@ impl EjectionParticle {
 
 // we will put it as a class function for portability
 impl EjectionParticle {
-    // helper funciton to go to complex
-    /* pub fn position_to_complex(&self) -> Complex<f64> {
-        Complex::from_polar(self.radial_position, self.angular_position)
-    } */
 
     // moves the particle when it's absorbed on a sticky trap
     pub fn move_on_sticky_trap(
