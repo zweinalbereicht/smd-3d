@@ -75,6 +75,72 @@ fn fpt_distribution_python(
 }
 
 #[pyfunction(text_signature = "
+computes a distribution of fpt in the SMD ejection setup, with possible multiple traps and stickytraps.
+
+parameters :
+
+outer_radius,
+bulk_coefficient,
+boundary_coefficient,
+ejection_length,
+desorption_time,
+stickytraps, [[x1,y1,z1,radius1,desorption_time, boundary_coefficient],,...]
+traps, [[x1,y1,z1, radius1],[x2,y2,z2,radius2],...]
+initial_position, [x,y,z]
+nb_simulations,
+timestep,
+")]
+fn fpt_distribution_stickytraps_python(
+    outer_radius: f64,
+    bulk_coefficient: f64,
+    boundary_coefficient: f64,
+    ejection_length: f64,
+    desorption_time: f64,
+    stickytraps: Vec<Vec<f64>>,
+    traps: Vec<Vec<f64>>,
+    initial_position: Vec<f64>,
+    nb_simulations: u32,
+    timestep: f64,
+) -> PyResult<Vec<f64>> {
+    let mut environement = EjectionEnvironment {
+        outer_radius,
+        bulk_coefficient,
+        boundary_coefficient,
+        ejection_length,
+        desorption_time,
+        ..default()
+    };
+
+    if traps.len() > 0 {
+        // take away the default trap
+        environement.traps.pop();
+    }
+    // add all the new traps
+    traps
+        .iter()
+        .map(|x| parse_trap(x))
+        .for_each(|p| environement.add_trap(p.unwrap()));
+
+    // fill with the traps and stickytraps
+    stickytraps
+        .iter()
+        .map(|x| parse_sticky_trap(x))
+        .for_each(|p| environement.add_sticky_trap(p.unwrap()));
+
+    let mut rng = rand_pcg::Pcg64::from_entropy();
+
+    let fpts = fpt_distribution(
+        Vector3::from_vec(initial_position),
+        nb_simulations,
+        &environement,
+        &mut rng,
+        timestep,
+    );
+
+    Ok(fpts)
+}
+
+#[pyfunction(text_signature = "
 computes the mfpt in the 3D SMD ejection setup, using an event driven algorithm.
 
 parameters : 
