@@ -614,6 +614,7 @@ fn smd_3d(_py: Python, m: &PyModule) -> PyResult<()> {
     // m.add_function(wrap_pyfunction!(covered_territory_distribution_python, m)?)?;
     m.add_function(wrap_pyfunction!(mfpt_python, m)?)?;
     m.add_function(wrap_pyfunction!(mfpt_stickytraps_python, m)?)?;
+    m.add_function(wrap_pyfunction!(fpt_distribution_stickytraps_python, m)?)?;
     m.add_function(wrap_pyfunction!(fpt_distribution_python, m)?)?;
     m.add_function(wrap_pyfunction!(stationnary_state_python, m)?)?;
     m.add_function(wrap_pyfunction!(testing_stuff, m)?)?;
